@@ -1,0 +1,2338 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Stellar Pay API",
+    "version": "0.1.0",
+    "description": "REST API for Stellar Pay (testnet). Amounts are decimal strings of token base units. Errors use `{ error: { code, message, details? } }`.",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "secretKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Secret API key (`sk_test_...`). Server-to-server only; never use it in a browser."
+      }
+    },
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "network": {
+            "type": "string"
+          },
+          "contractId": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "status",
+          "network",
+          "contractId",
+          "time"
+        ]
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "created",
+          "paid",
+          "settled",
+          "refunded",
+          "cancelled",
+          "failed"
+        ]
+      },
+      "SettleMode": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "manual"
+        ]
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "32-byte payment id (hex)",
+            "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "payment"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{0,38}$",
+            "description": "Amount in token base units, as a decimal string",
+            "example": "10000000"
+          },
+          "token": {
+            "type": "string"
+          },
+          "tokenCode": {
+            "type": "string"
+          },
+          "decimals": {
+            "type": "integer"
+          },
+          "merchantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchantAddress": {
+            "type": "string"
+          },
+          "settleMode": {
+            "$ref": "#/components/schemas/SettleMode"
+          },
+          "payer": {
+            "type": "string",
+            "nullable": true
+          },
+          "reference": {
+            "type": "string",
+            "nullable": true
+          },
+          "metadata": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "successUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "feeBps": {
+            "type": "integer",
+            "nullable": true
+          },
+          "fee": {
+            "type": "string",
+            "nullable": true,
+            "description": "Fee in base units (set once settled)"
+          },
+          "checkoutUrl": {
+            "type": "string"
+          },
+          "transactions": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "string",
+                "nullable": true,
+                "description": "Transaction hash (hex)"
+              },
+              "pay": {
+                "type": "string",
+                "nullable": true,
+                "description": "Transaction hash (hex)"
+              },
+              "settle": {
+                "type": "string",
+                "nullable": true,
+                "description": "Transaction hash (hex)"
+              },
+              "refund": {
+                "type": "string",
+                "nullable": true,
+                "description": "Transaction hash (hex)"
+              },
+              "cancel": {
+                "type": "string",
+                "nullable": true,
+                "description": "Transaction hash (hex)"
+              }
+            },
+            "required": [
+              "create",
+              "pay",
+              "settle",
+              "refund",
+              "cancel"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "status",
+          "amount",
+          "token",
+          "tokenCode",
+          "decimals",
+          "merchantId",
+          "merchantAddress",
+          "settleMode",
+          "payer",
+          "reference",
+          "metadata",
+          "successUrl",
+          "cancelUrl",
+          "feeBps",
+          "fee",
+          "checkoutUrl",
+          "transactions",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "VALIDATION_ERROR"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "nullable": true
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "CreatePaymentRequest": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{0,38}$",
+            "description": "Amount in token base units, as a decimal string",
+            "example": "10000000"
+          },
+          "token": {
+            "type": "string",
+            "description": "Token contract id; must equal the configured token if given"
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Merchant reference (off-chain; only a salted hash goes on-chain)"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "nullable": true
+                },
+                {
+                  "nullable": true
+                }
+              ]
+            },
+            "description": "Merchant key/value data (off-chain only, max 20 keys)"
+          },
+          "settleMode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SettleMode"
+              },
+              {
+                "default": "manual"
+              }
+            ]
+          },
+          "successUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          },
+          "cancelUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "additionalProperties": false
+      },
+      "PaymentList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Payment"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pass as `cursor` to get the next page"
+          }
+        },
+        "required": [
+          "data",
+          "hasMore",
+          "nextCursor"
+        ]
+      },
+      "PublicPayment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "32-byte payment id (hex)",
+            "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{0,38}$",
+            "description": "Amount in token base units, as a decimal string",
+            "example": "10000000"
+          },
+          "token": {
+            "type": "string"
+          },
+          "tokenCode": {
+            "type": "string"
+          },
+          "decimals": {
+            "type": "integer"
+          },
+          "merchantName": {
+            "type": "string"
+          },
+          "successUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "amount",
+          "token",
+          "tokenCode",
+          "decimals",
+          "merchantName",
+          "successUrl",
+          "cancelUrl",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "BuildTransactionResponse": {
+        "type": "object",
+        "properties": {
+          "transactionXdr": {
+            "type": "string",
+            "description": "Unsigned, simulated and assembled transaction (base64 XDR)"
+          },
+          "networkPassphrase": {
+            "type": "string"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "transactionXdr",
+          "networkPassphrase",
+          "validUntil"
+        ]
+      },
+      "BuildTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "payer": {
+            "type": "string",
+            "minLength": 56,
+            "maxLength": 56,
+            "description": "Payer account (G...)"
+          }
+        },
+        "required": [
+          "payer"
+        ],
+        "additionalProperties": false
+      },
+      "SubmitTransactionResponse": {
+        "type": "object",
+        "properties": {
+          "transactionHash": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          }
+        },
+        "required": [
+          "transactionHash",
+          "status"
+        ]
+      },
+      "SubmitTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "signedXdr": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          }
+        },
+        "required": [
+          "signedXdr"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookEventType": {
+        "type": "string",
+        "enum": [
+          "payment.created",
+          "payment.paid",
+          "payment.settled",
+          "payment.refunded",
+          "payment.cancelled"
+        ]
+      },
+      "WebhookEndpoint": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "webhook_endpoint"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventType"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "url",
+          "events",
+          "enabled",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WebhookEndpointWithSecret": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WebhookEndpoint"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "secret": {
+                "type": "string",
+                "description": "Signing secret. Returned only once, at creation."
+              }
+            },
+            "required": [
+              "secret"
+            ]
+          }
+        ]
+      },
+      "CreateWebhookEndpointRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri",
+            "example": "https://merchant.example/webhooks/stellar-pay"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventType"
+            },
+            "minItems": 1,
+            "default": [
+              "payment.created",
+              "payment.paid",
+              "payment.settled",
+              "payment.refunded",
+              "payment.cancelled"
+            ]
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "WebhookEndpointList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookEndpoint"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "UpdateWebhookEndpointRequest": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventType"
+            },
+            "minItems": 1
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookDelivery": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "webhook_delivery"
+            ]
+          },
+          "endpointId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "sending",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "attempt": {
+            "type": "integer"
+          },
+          "nextAttemptAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          "responseCode": {
+            "type": "integer",
+            "nullable": true
+          },
+          "responseMs": {
+            "type": "integer",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "endpointId",
+          "eventId",
+          "eventType",
+          "status",
+          "attempt",
+          "nextAttemptAt",
+          "responseCode",
+          "responseMs",
+          "error",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WebhookDeliveryList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookDelivery"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "Merchant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "merchant"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "payoutAddress": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "name",
+          "displayName",
+          "payoutAddress",
+          "createdAt"
+        ]
+      },
+      "Scope": {
+        "type": "string",
+        "enum": [
+          "payments:read",
+          "payments:write",
+          "webhooks:read",
+          "webhooks:write"
+        ]
+      },
+      "ApiKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "object": {
+            "type": "string",
+            "enum": [
+              "api_key"
+            ]
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Scope"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          "lastUsedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          },
+          "revokedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time",
+            "example": "2026-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "prefix",
+          "scopes",
+          "createdAt",
+          "lastUsedAt",
+          "revokedAt"
+        ]
+      },
+      "ApiKeyList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKey"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "ApiKeyWithSecret": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiKey"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "The secret key. Returned only once."
+              }
+            },
+            "required": [
+              "key"
+            ]
+          }
+        ]
+      },
+      "CreateApiKeyRequest": {
+        "type": "object",
+        "properties": {
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Scope"
+            },
+            "minItems": 1,
+            "default": [
+              "payments:read",
+              "payments:write",
+              "webhooks:read",
+              "webhooks:write"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "operationId": "getHealth",
+        "tags": [
+          "ops"
+        ],
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments": {
+      "post": {
+        "operationId": "createPayment",
+        "tags": [
+          "payments"
+        ],
+        "summary": "Create a payment",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "description": "Creates the payment on-chain (`create_payment`, operator-signed). Returns 201 once confirmed, or 202 with status `pending` if the chain outcome is not known yet.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "description": "Required. Retries with the same key and body return the original response."
+            },
+            "required": true,
+            "name": "idempotency-key",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created on-chain",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted; on-chain confirmation pending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Contract rejected the call or idempotency key in progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Idempotency-Key reused with a different body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listPayments",
+        "tags": [
+          "payments"
+        ],
+        "summary": "List payments",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/PaymentStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-01-01T00:00:00.000Z"
+            },
+            "required": false,
+            "name": "created_gte",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-01-01T00:00:00.000Z"
+            },
+            "required": false,
+            "name": "created_lte",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Return payments updated at or after this time, oldest update first (aggregator feed)",
+              "example": "2026-01-01T00:00:00.000Z"
+            },
+            "required": false,
+            "name": "updated_since",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of payments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{id}": {
+      "get": {
+        "operationId": "getPayment",
+        "tags": [
+          "payments"
+        ],
+        "summary": "Get a payment",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "32-byte payment id (hex)",
+              "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{id}/cancel": {
+      "post": {
+        "operationId": "cancelPayment",
+        "tags": [
+          "payments"
+        ],
+        "summary": "Cancel a payment",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "description": "Operator action. Allowed from status `created`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "32-byte payment id (hex)",
+              "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Payment is not in the required state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{id}/settle": {
+      "post": {
+        "operationId": "settlePayment",
+        "tags": [
+          "payments"
+        ],
+        "summary": "Settle a payment",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "description": "Operator action. Allowed from status `paid`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "32-byte payment id (hex)",
+              "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Payment is not in the required state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{id}/refund": {
+      "post": {
+        "operationId": "refundPayment",
+        "tags": [
+          "payments"
+        ],
+        "summary": "Refund a payment",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "description": "Operator action. Allowed from status `paid`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "32-byte payment id (hex)",
+              "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Payment is not in the required state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/payments/{id}": {
+      "get": {
+        "operationId": "getPublicPayment",
+        "tags": [
+          "public checkout"
+        ],
+        "summary": "Minimal checkout view",
+        "description": "No API key. Authorized by the unguessable payment id. Rate-limited per IP.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "32-byte payment id (hex)",
+              "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPayment"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/payments/{id}/transaction": {
+      "post": {
+        "operationId": "buildPayTransaction",
+        "tags": [
+          "public checkout"
+        ],
+        "summary": "Build the unsigned pay transaction",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "32-byte payment id (hex)",
+              "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prepared transaction for the payer to sign",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildTransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payer or payer account missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Payment not payable or simulation rejected by the contract",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/payments/{id}/submit": {
+      "post": {
+        "operationId": "submitPayTransaction",
+        "tags": [
+          "public checkout"
+        ],
+        "summary": "Submit the signed pay transaction",
+        "description": "The envelope must be exactly one invocation of this contract's `pay(payer, id)` with the payer as source and signer. Anything else is rejected with `INVALID_TRANSACTION`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$",
+              "description": "32-byte payment id (hex)",
+              "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTransactionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted and confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitTransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Transaction rejected by verification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Payment not payable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Network rejected the transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timed out waiting for confirmation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhook-endpoints": {
+      "post": {
+        "operationId": "createWebhookEndpoint",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Create a webhook endpoint",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "description": "HTTPS only; hosts resolving to private, loopback, link-local or metadata addresses are rejected. The signing secret is returned once.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookEndpointRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointWithSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or disallowed URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listWebhookEndpoints",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "List webhook endpoints",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Endpoints",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhook-endpoints/{id}": {
+      "get": {
+        "operationId": "getWebhookEndpoint",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Get a webhook endpoint",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpoint"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateWebhookEndpoint",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Update a webhook endpoint",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWebhookEndpointRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpoint"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or disallowed URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWebhookEndpoint",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Delete a webhook endpoint",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhook-deliveries": {
+      "get": {
+        "operationId": "listWebhookDeliveries",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Delivery log",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "endpoint_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "sending",
+                "succeeded",
+                "failed"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deliveries, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhook-deliveries/{id}/retry": {
+      "post": {
+        "operationId": "retryWebhookDelivery",
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Retry a delivery now",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rescheduled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDelivery"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Delivery in progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/merchant": {
+      "get": {
+        "operationId": "getMerchant",
+        "tags": [
+          "merchant"
+        ],
+        "summary": "The authenticated merchant",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Merchant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Merchant"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api-keys": {
+      "get": {
+        "operationId": "listApiKeys",
+        "tags": [
+          "merchant"
+        ],
+        "summary": "List API keys",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Keys (no secrets)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createApiKey",
+        "tags": [
+          "merchant"
+        ],
+        "summary": "Create an API key",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "description": "The new key can only have scopes the calling key has. The secret is returned once.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyWithSecret"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api-keys/{id}": {
+      "delete": {
+        "operationId": "revokeApiKey",
+        "tags": [
+          "merchant"
+        ],
+        "summary": "Revoke an API key",
+        "security": [
+          {
+            "secretKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API key lacks the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
