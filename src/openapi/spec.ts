@@ -14,7 +14,12 @@ const idempotencyHeader = S.z.object({
   'idempotency-key': S.z.string().min(1).max(255).openapi({ description: 'Required. Retries with the same key and body return the original response.' }),
 });
 
-/** Builds the OpenAPI 3.0 document from the same Zod schemas the routes validate with. */
+/**
+ * Builds the OpenAPI 3.0 document from the same Zod schemas the routes validate with.
+ *
+ * TODO(wave: api-3): descriptions and request/response examples for every
+ * route, an error-code catalog, and authentication/webhook guides (docs/).
+ */
 export function buildOpenApiDocument(): ReturnType<OpenApiGeneratorV3['generateDocument']> {
   const registry = new OpenAPIRegistry();
   registry.registerComponent('securitySchemes', 'secretKey', {

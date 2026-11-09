@@ -1,0 +1,62 @@
+name: Wave task (maintainers)
+description: A scoped contributor task for the Stellar Wave program
+labels: ["wave"]
+body:
+  - type: markdown
+    attributes:
+      value: "Maintainers only. Every Wave issue must be real, unstarted, scoped, labeled, with acceptance criteria and code pointers precise enough to start within an hour."
+  - type: input
+    id: wave_id
+    attributes:
+      label: Wave id
+      placeholder: "e.g. core-3"
+    validations:
+      required: true
+  - type: dropdown
+    id: points
+    attributes:
+      label: Points
+      options: ["2", "3", "4"]
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What and why, one paragraph.
+    validations:
+      required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: Background
+      description: Current behavior, files and docs to read, and the TODO(wave …) marker location.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      value: |
+        - [ ] Deliverable 1
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] Tests added and passing (verify command in CONTRIBUTING.md)
+        - [ ] Docs updated
+        - [ ] No breaking change to the public interface (or an approved, documented one)
+    validations:
+      required: true
+  - type: textarea
+    id: howto
+    attributes:
+      label: How to test locally
+      render: shell

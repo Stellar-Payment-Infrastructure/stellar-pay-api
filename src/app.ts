@@ -46,6 +46,8 @@ export function createApp(deps: AppDeps): Express {
   );
 
   // Merchant API: server-to-server only, no CORS.
+  // TODO(wave: api-1): mount a GraphQL endpoint here that resolves through the
+  // same services (src/payments/service.ts) with the same API-key auth and scopes.
   app.use('/v1', merchantRouter(deps));
 
   app.use((_req, _res, next) => next(notFound('Route')));
