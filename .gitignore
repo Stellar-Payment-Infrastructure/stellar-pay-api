@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+# Embedded pglite databases (DATABASE_URL=pglite://...)
+.data/
+sdk/.pack/
+.stellar/
