@@ -14,7 +14,7 @@ if (read(committedPath) !== generated) {
   ok = false;
 }
 if (existsSync(path.dirname(sdkCopyPath)) && read(sdkCopyPath) !== generated) {
-  console.error('sdk/openapi.json is stale. Run `bash ../scripts/sync-sdk.sh` from the repo root (or `pnpm --dir sdk generate`).');
+  console.error('sdk/openapi.json is stale. Run `pnpm sdk:sync` (regenerates the spec, copies it into sdk/ and regenerates the SDK types).');
   ok = false;
 }
 if (!ok) process.exit(1);

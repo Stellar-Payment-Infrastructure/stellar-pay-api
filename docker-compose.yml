@@ -1,5 +1,6 @@
-version: '3.8'
-
+# Local stack: Postgres + the API image.
+#   cp .env.example .env    # then fill in the three secrets
+#   docker compose up --build
 services:
   postgres:
     image: postgres:16-alpine
@@ -18,26 +19,16 @@ services:
       retries: 5
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
+    env_file: .env
+    environment:
+      # Overrides .env so the container reaches the postgres service.
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/stellar_pay_api
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/stellar_pay_api
-      - RPC_URL=https://soroban-testnet.stellar.org
-      - NETWORK_PASSPHRASE=Test SDF Network ; September 2015
-      - CONTRACT_ID=${CONTRACT_ID}
-      - OPERATOR_SECRET_KEY=${OPERATOR_SECRET_KEY}
-      - WEBHOOK_SECRET_PEPPER=${WEBHOOK_SECRET_PEPPER}
-      - API_KEY_PREFIX=sk_test
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - .:/app
-      - /app/node_modules
 
 volumes:
   postgres_data:

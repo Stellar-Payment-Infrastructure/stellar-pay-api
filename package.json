@@ -22,7 +22,8 @@
     "seed": "tsx scripts/seed.ts",
     "e2e:testnet": "tsx scripts/e2e-testnet.ts",
     "openapi:generate": "tsx scripts/generate-openapi.ts",
-    "openapi:check": "tsx scripts/check-openapi.ts"
+    "openapi:check": "tsx scripts/check-openapi.ts",
+    "sdk:sync": "pnpm openapi:generate && node -e \"require('node:fs').copyFileSync('openapi/openapi.json','sdk/openapi.json')\" && pnpm --dir sdk generate"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "7.3.4",
