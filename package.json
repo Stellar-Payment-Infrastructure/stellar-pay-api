@@ -28,7 +28,7 @@
     "@asteasolutions/zod-to-openapi": "7.3.4",
     "@stellar/stellar-sdk": "16.4.1",
     "cors": "2.8.6",
-    "drizzle-orm": "0.35.3",
+    "drizzle-orm": "0.45.4",
     "express": "4.22.3",
     "helmet": "8.3.0",
     "pino": "9.14.0",
@@ -52,5 +52,11 @@
     "typescript": "5.6.3",
     "typescript-eslint": "8.72.1",
     "vitest": "2.1.9"
+  },
+  "pnpm": {
+    "overrides": {
+      "follow-redirects": "1.16.2",
+      "qs": "6.16.1"
+    }
   }
 }
